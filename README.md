@@ -54,6 +54,9 @@ uv run awslens --profile myproj --format yaml
 # サービスを指定して取得
 uv run awslens --profile myproj --services lambda,s3,dynamodb
 
+# Bedrock AgentCore のランタイム、ゲートウェイ、メモリなどを取得
+uv run awslens --profile myproj --services agentcore
+
 # ファイルに出力
 uv run awslens --profile myproj --output resources.yaml --format yaml
 
@@ -81,6 +84,7 @@ uv run awslens --profile myproj --stack "my-app-*" --stack shared-infra
 |---|---|
 | CDN / Storage | cloudfront, s3 |
 | Compute | lambda, ecs (clusters, services, task definitions), ecr, apprunner |
+| AI agents | agentcore (Bedrock AgentCore runtimes, gateways, memories, browsers, code interpreters, identities, evaluation / policy resources) |
 | Networking | vpc, securitygroup, alb |
 | Database | rds, dynamodb |
 | Messaging | sns, sqs, eventbridge (rules, Scheduler schedules) |

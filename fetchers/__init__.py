@@ -11,6 +11,7 @@ from .dns_and_certs import fetch_route53, fetch_acm
 from .monitoring import fetch_cloudwatch, fetch_stepfunctions, fetch_secrets
 from .iam import fetch_iam_dependencies
 from .apprunner import fetch_apprunner
+from .agentcore import fetch_agentcore
 from .cfn import fetch_cfn_stacks
 
 ALL_SERVICES = [
@@ -18,6 +19,7 @@ ALL_SERVICES = [
     "route53", "acm", "rds", "dynamodb", "secrets", "vpc",
     "securitygroup", "ecs", "ecr", "cloudwatch", "eventbridge",
     "apprunner", "stepfunctions", "iam_dependencies", "cfn_stacks",
+    "agentcore",
 ]
 
 SERVICE_FETCHERS = {
@@ -40,6 +42,7 @@ SERVICE_FETCHERS = {
     "cloudwatch": fetch_cloudwatch,
     "eventbridge": fetch_eventbridge,
     "apprunner": fetch_apprunner,
+    "agentcore": fetch_agentcore,
     "stepfunctions": fetch_stepfunctions,
     "iam_dependencies": fetch_iam_dependencies,
     "cfn_stacks": fetch_cfn_stacks,

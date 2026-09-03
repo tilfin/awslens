@@ -53,7 +53,11 @@ class ResourceFilter:
         self._ids.setdefault(service, set()).add(physical_id)
 
     def classify_and_add(self, resource_type: str, physical_id: str) -> None:
-        service = CFN_TYPE_TO_SERVICE.get(resource_type)
+        service = (
+            "agentcore"
+            if resource_type.startswith("AWS::BedrockAgentCore::")
+            else CFN_TYPE_TO_SERVICE.get(resource_type)
+        )
         if service:
             self.add(service, physical_id)
 
@@ -70,6 +74,7 @@ class ResourceFilter:
             ("arn:aws:events:", "eventbridge", lambda v: v.rsplit("/", 1)[-1]),
             ("arn:aws:scheduler:", "eventbridge", lambda v: v.rsplit("/", 1)[-1]),
             ("arn:aws:apprunner:", "apprunner", lambda v: v.rsplit("/", 1)[-1]),
+            ("arn:aws:bedrock-agentcore:", "agentcore", lambda v: v),
         ]
         for prefix, service, extractor in _ARN_CLASSIFIERS:
             if value.startswith(prefix):
