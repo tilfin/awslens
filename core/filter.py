@@ -32,9 +32,11 @@ CFN_TYPE_TO_SERVICE = {
     "AWS::EC2::SecurityGroup": "securitygroup",
     "AWS::ECS::Cluster": "ecs",
     "AWS::ECS::Service": "ecs",
+    "AWS::ECS::TaskDefinition": "ecs",
     "AWS::ECR::Repository": "ecr",
     "AWS::CloudWatch::Alarm": "cloudwatch",
     "AWS::Events::Rule": "eventbridge",
+    "AWS::Scheduler::Schedule": "eventbridge",
     "AWS::StepFunctions::StateMachine": "stepfunctions",
     "AWS::AppRunner::Service": "apprunner",
 }
@@ -66,6 +68,7 @@ class ResourceFilter:
             ("arn:aws:states:", "stepfunctions", lambda v: v.split(":stateMachine:")[-1]),
             ("arn:aws:ecr:", "ecr", lambda v: v.rsplit("/", 1)[-1]),
             ("arn:aws:events:", "eventbridge", lambda v: v.rsplit("/", 1)[-1]),
+            ("arn:aws:scheduler:", "eventbridge", lambda v: v.rsplit("/", 1)[-1]),
             ("arn:aws:apprunner:", "apprunner", lambda v: v.rsplit("/", 1)[-1]),
         ]
         for prefix, service, extractor in _ARN_CLASSIFIERS:

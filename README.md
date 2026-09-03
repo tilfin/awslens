@@ -14,6 +14,23 @@ AWS 環境のリソースをスナップショットし、Markdown / YAML で出
 uv sync
 ```
 
+## Single-file build
+
+`core/` と `fetchers/` の自作実装だけを 1 つの Python ファイルに展開できます。
+`boto3` と `PyYAML` は意図的に同梱しないため、実行環境に別途インストールしてください。
+
+```bash
+uv run python scripts/build_single_file.py
+# dist/awslens.py と dist/awslens-diff.py を生成
+
+pip install boto3 pyyaml
+python dist/awslens.py --profile myproj --region ap-northeast-1
+python dist/awslens-diff.py before.yaml after.yaml
+```
+
+生成されたファイルはローカルモジュールを内包しているため、`core/` と `fetchers/` をコピーする必要はありません。
+出力先は `--output-dir` で変更できます。
+
 ## awslens
 
 AWS リソースの収集・出力を行うメインコマンド。
@@ -56,10 +73,10 @@ uv run awslens --profile myproj --stack "my-app-*" --stack shared-infra
 | Category | Services |
 |---|---|
 | CDN / Storage | cloudfront, s3 |
-| Compute | lambda, ecs, ecr, apprunner |
+| Compute | lambda, ecs (clusters, services, task definitions), ecr, apprunner |
 | Networking | vpc, securitygroup, alb |
 | Database | rds, dynamodb |
-| Messaging | sns, sqs, eventbridge |
+| Messaging | sns, sqs, eventbridge (rules, Scheduler schedules) |
 | API | apigateway (REST + HTTP) |
 | DNS / Certs | route53, acm |
 | Monitoring | cloudwatch, stepfunctions, secrets |

@@ -1,4 +1,4 @@
-"""Lambda, ECS, ECR fetchers."""
+"""Lambda, ECS, and ECR fetchers."""
 
 from botocore.exceptions import ClientError, BotoCoreError
 
@@ -63,6 +63,17 @@ def fetch_ecs(ctx: AWSContext, filt: ResourceFilter) -> list[Section]:
     if filt.enabled and not filt.has_ids("ecs"):
         return []
     ecs = ctx.client("ecs")
+    clusters = _fetch_ecs_clusters(ecs, filt)
+    task_definitions = _fetch_ecs_task_definitions(ecs, filt)
+    if not clusters and not task_definitions:
+        return []
+    return [Section("ECS", {
+        "clusters": clusters,
+        "task_definitions": task_definitions,
+    })]
+
+
+def _fetch_ecs_clusters(ecs, filt: ResourceFilter) -> list[dict]:
     resp = safe_call("ECS clusters", ecs.list_clusters)
     if not resp:
         return []
@@ -113,7 +124,89 @@ def fetch_ecs(ctx: AWSContext, filt: ResourceFilter) -> list[Section]:
         result.append(info)
     if not result:
         return []
-    return [Section("ECS", {"clusters": result})]
+    return result
+
+
+def _fetch_ecs_task_definitions(ecs, filt: ResourceFilter) -> list[dict]:
+    """Collect active task definitions, omitting environment variable values."""
+    task_definition_arns = []
+    params = {"status": "ACTIVE", "sort": "DESC"}
+    while True:
+        resp = safe_call("ECS task definitions", ecs.list_task_definitions, **params)
+        if not resp:
+            break
+        task_definition_arns.extend(resp.get("taskDefinitionArns", []))
+        next_token = resp.get("nextToken")
+        if not next_token:
+            break
+        params["nextToken"] = next_token
+
+    result = []
+    for arn in task_definition_arns:
+        family_and_revision = arn.rsplit("/", 1)[-1]
+        if filt.enabled and not (
+            filt.matches(arn, "ecs")
+            or filt.matches(family_and_revision, "ecs")
+        ):
+            continue
+        try:
+            resp = ecs.describe_task_definition(taskDefinition=arn)
+        except (ClientError, BotoCoreError):
+            continue
+        definition = resp.get("taskDefinition", {})
+        if definition:
+            result.append(_summarize_task_definition(definition))
+    return result
+
+
+def _summarize_task_definition(definition: dict) -> dict:
+    containers = []
+    for container in definition.get("containerDefinitions", []):
+        log_options = container.get("logConfiguration") or {}
+        containers.append({
+            "name": container.get("name"),
+            "image": container.get("image"),
+            "essential": container.get("essential", True),
+            "cpu": container.get("cpu"),
+            "memory": container.get("memory"),
+            "memory_reservation": container.get("memoryReservation"),
+            "port_mappings": [
+                {
+                    "name": port.get("name"),
+                    "container_port": port.get("containerPort"),
+                    "host_port": port.get("hostPort"),
+                    "protocol": port.get("protocol"),
+                    "app_protocol": port.get("appProtocol"),
+                }
+                for port in container.get("portMappings", [])
+            ],
+            "environment_vars": [item.get("name") for item in container.get("environment", [])],
+            "secrets": [item.get("name") for item in container.get("secrets", [])],
+            "log_configuration": {
+                "driver": log_options.get("logDriver"),
+                "options": log_options.get("options", {}),
+            } if log_options else None,
+        })
+    runtime = definition.get("runtimePlatform") or {}
+    return {
+        "family": definition.get("family"),
+        "revision": definition.get("revision"),
+        "arn": definition.get("taskDefinitionArn"),
+        "status": definition.get("status"),
+        "requires_compatibilities": definition.get("requiresCompatibilities", []),
+        "network_mode": definition.get("networkMode"),
+        "cpu": definition.get("cpu"),
+        "memory": definition.get("memory"),
+        "task_role": definition.get("taskRoleArn"),
+        "execution_role": definition.get("executionRoleArn"),
+        "runtime_platform": {
+            "cpu_architecture": runtime.get("cpuArchitecture"),
+            "operating_system_family": runtime.get("operatingSystemFamily"),
+        } if runtime else None,
+        "ephemeral_storage_gib": (definition.get("ephemeralStorage") or {}).get("sizeInGiB"),
+        "containers": containers,
+        "volumes": [volume.get("name") for volume in definition.get("volumes", [])],
+    }
 
 
 def fetch_ecr(ctx: AWSContext, filt: ResourceFilter) -> list[Section]:
