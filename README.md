@@ -3,6 +3,13 @@
 AWS 環境のリソースをスナップショットし、Markdown / YAML で出力する CLI ツール。
 2 時点のスナップショットを比較する diff ツール付き。
 
+## Run in the AWS Cloud Shell 
+
+```
+wget https://raw.githubusercontent.com/tilfin/awslens/refs/heads/main/dist/awslens.py
+python3 awslens.py > aws_lens_result.yaml
+```
+
 ## Requirements
 
 - Python 3.13+
